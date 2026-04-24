@@ -1,0 +1,173 @@
+<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><link rel="apple-touch-icon" sizes="180x180" href="icon.png">
+  <meta name="theme-color" content="#1a1a1a">
+  <meta name="apple-mobile-web-app-capable" content="yes"><title>財務管家</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#1a1a1a;--card:#242424;--border:#333;--text:#f5f0e8;--dim:rgba(245,240,232,.6);--faint:rgba(245,240,232,.38);--green:#6ee7b7;--red:#fb7185;--amber:#fbbf24;--violet:#c084fc;--cyan:#67e8f9}
+html,body{height:100%;background:var(--bg);font-family:-apple-system,"PingFang TC",sans-serif;color:var(--text);-webkit-tap-highlight-color:transparent}
+#app{max-width:430px;margin:0 auto;height:100vh;height:-webkit-fill-available;display:flex;flex-direction:column;background:var(--bg)}
+.hdr{padding:20px 18px 16px;background:var(--bg)}
+.hdr-top{font-size:11px;color:var(--faint);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
+.hdr-title{font-size:24px;font-weight:700;color:var(--text)}
+.hdr-sub{font-size:12px;color:var(--dim);margin-top:2px}
+.hero{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;margin:0 18px 0}
+.hero-lbl{font-size:11px;color:var(--dim);letter-spacing:.8px;margin-bottom:6px}
+.hero-amt{font-size:34px;font-weight:700;letter-spacing:-1px}
+.hero-amt.pos{color:var(--green)}
+.hero-amt.neg{color:var(--red)}
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.chip{background:#1e1e1e;border:1px solid var(--border);border-radius:11px;padding:10px 12px}
+.chip-l{font-size:11px;color:var(--dim);margin-bottom:3px}
+.chip-v{font-size:14px;font-weight:700}
+main{flex:1;overflow-y:auto;padding:16px 18px 90px}
+main::-webkit-scrollbar{display:none}
+.sec{font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--faint);margin:16px 0 8px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:13px 14px;margin-bottom:7px;display:flex;align-items:center;gap:11px}
+.ico{width:40px;height:40px;border-radius:11px;background:#2a2a2a;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.cn{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cm{font-size:11px;color:var(--dim);margin-top:2px}
+.ca{font-size:14px;font-weight:700;text-align:right;flex-shrink:0;margin-left:auto}
+.bdg{display:block;font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;margin-top:3px;text-align:center}
+.bdg-tw{background:rgba(103,232,249,.12);color:var(--cyan);border:1px solid rgba(103,232,249,.2)}
+.bdg-us{background:rgba(110,231,183,.1);color:var(--green);border:1px solid rgba(110,231,183,.2)}
+.empty{text-align:center;padding:48px 0;color:var(--faint);font-size:13px}
+.empty span{display:block;font-size:40px;margin-bottom:10px;opacity:.6}
+.stk2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 12px}
+.sc-flag{font-size:20px;margin-bottom:6px;display:block}
+.sc-name{font-size:11px;color:var(--dim);margin-bottom:8px}
+.sc-row{display:flex;justify-content:space-between;margin-bottom:4px}
+.sc-l{font-size:11px;color:var(--faint)}
+.sc-v{font-size:11px;font-weight:600;color:var(--dim)}
+.sc-pnl{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.sc-pl{font-size:10px;color:var(--faint)}
+.sc-pv{font-size:13px;font-weight:700}
+.form{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px}
+.ftitle{font-size:16px;font-weight:700;text-align:center;margin-bottom:16px}
+.tabs{display:flex;background:#1a1a1a;border-radius:12px;padding:3px;gap:2px;margin-bottom:16px}
+.tab{flex:1;border:none;background:none;border-radius:10px;padding:9px 2px;font-size:12px;font-weight:700;color:var(--faint);cursor:pointer;font-family:inherit;transition:all .15s}
+.tab.ae{background:#2d1a1e;color:var(--red);border:1px solid rgba(251,113,133,.25)}
+.tab.ai{background:#1a2d22;color:var(--green);border:1px solid rgba(110,231,183,.25)}
+.tab.as{background:#221a2d;color:var(--violet);border:1px solid rgba(192,132,252,.25)}
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--faint);margin-bottom:5px}
+.fg select,.fg input{width:100%;padding:12px 14px;background:#1a1a1a;border:1px solid var(--border);border-radius:11px;font-size:15px;color:var(--text);-webkit-appearance:none;outline:none;font-family:inherit}
+.fg select option{background:#1e1e1e}
+.big{font-size:26px!important;text-align:center;font-weight:700}
+.btn{width:100%;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;color:var(--text)}
+.btn-e{background:linear-gradient(135deg,#f43f5e,#e11d48)}
+.btn-i{background:linear-gradient(135deg,#10b981,#059669)}
+.btn-s{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
+.btn-c{background:none;color:var(--faint);font-size:13px;padding:10px}
+.btn-add{width:100%;background:linear-gradient(135deg,#8b5cf6,#6d28d9);border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;color:var(--text);cursor:pointer;font-family:inherit;margin-bottom:8px}
+.btn-del{width:100%;background:#2a1a1a;color:var(--red);border:1px solid rgba(251,113,133,.2);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:7px}
+.si{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:8px}
+.sr{display:flex;justify-content:space-between;align-items:center;padding:13px 15px;border-bottom:1px solid var(--border);font-size:14px}
+.sr:last-child{border-bottom:none}
+.sv{font-size:12px;color:var(--dim)}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#111;border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;padding:10px 16px;padding-bottom:max(10px,env(safe-area-inset-bottom));z-index:99}
+nav::before{content:'';position:absolute;bottom:100%;left:0;right:0;height:50px;background:linear-gradient(to bottom,transparent,#1a1a1a);pointer-events:none}
+.nb{background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-family:inherit;color:var(--faint);font-size:10px;font-weight:600;padding:4px 12px}
+.nb .ni{font-size:21px}
+.nb.bc{color:var(--cyan)}
+.nb.bp{color:var(--violet)}
+.nb.bg{color:var(--dim)}
+.nb-plus{background:linear-gradient(135deg,#38bdf8,#818cf8);border:none;width:50px;height:50px;border-radius:50%;font-size:26px;color:#fff;cursor:pointer;margin-top:-14px;outline:4px solid #111;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:#1e1e1e;border:1px solid #333;border-radius:20px 20px 0 0;padding:20px 18px;width:100%;max-width:430px;padding-bottom:max(20px,env(safe-area-inset-bottom))}
+.modal-title{font-size:16px;font-weight:700;text-align:center;color:var(--text);margin-bottom:16px}
+.modal-btns{display:flex;gap:8px;margin-top:4px}
+.btn-del2{flex:1;background:#2d1a1e;color:var(--red);border:1px solid rgba(251,113,133,.25);border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-save2{flex:2;background:linear-gradient(135deg,#38bdf8,#818cf8);color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.page{animation:pi .18s ease}
+@keyframes pi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+</style></head><body>
+<div id="app">
+  <div class="hdr" id="hdr"></div>
+  <main id="main"></main>
+  <nav>
+    <button class="nb bc" id="nb-o" onclick="go('o')"><span class="ni">◈</span>總覽</button>
+    <button class="nb" id="nb-s" onclick="go('s')"><span class="ni">◉</span>股票</button>
+    <button class="nb-plus" onclick="go('a')">＋</button>
+    <button class="nb" id="nb-g" onclick="go('g')"><span class="ni">◎</span>設定</button>
+  </nav>
+</div>
+<script>
+const EX=[{id:"food",l:"飲食",i:"🍜"},{id:"trans",l:"交通",i:"🚌"},{id:"play",l:"娛樂",i:"🎮"},{id:"house",l:"住家",i:"🏠"},{id:"med",l:"醫療",i:"💊"},{id:"shop",l:"購物",i:"🛍️"},{id:"eo",l:"其他",i:"📦"}].map(c=>({...c,t:"e"}));
+const IN=[{id:"sal",l:"薪資",i:"💼"},{id:"bon",l:"獎金",i:"🎁"},{id:"inv",l:"投資回報",i:"💹"},{id:"io",l:"其他",i:"💰"}].map(c=>({...c,t:"i"}));
+const ST=[{id:"tb",l:"台股買進",i:"📈",m:"TW",a:"b"},{id:"ts",l:"台股賣出",i:"📉",m:"TW",a:"s"},{id:"ub",l:"美股買進",i:"📈",m:"US",a:"b"},{id:"us",l:"美股賣出",i:"📉",m:"US",a:"s"}].map(c=>({...c,t:"k"}));
+const ALL=[...EX,...IN,...ST];
+const cat=id=>ALL.find(c=>c.id===id)||EX[0];
+const K='wlt2';
+const ld=()=>{try{return JSON.parse(localStorage.getItem(K)||'[]')}catch(e){return[]}};
+const sv=r=>localStorage.setItem(K,JSON.stringify(r));
+const fT=n=>'NT$ '+(+n).toLocaleString('zh-TW');
+const fU=n=>'US$ '+(+n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fA=(a,c)=>c==='USD'?fU(a):fT(a);
+const fD=iso=>{const d=new Date(iso);return(d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
+let tab='o',mode='e';
+function go(t){tab=t;if(t==='a')mode='e';['o','s','g'].forEach(id=>{const e=document.getElementById('nb-'+id);if(e)e.className='nb'});if(t==='o')document.getElementById('nb-o').className='nb bc';if(t==='s')document.getElementById('nb-s').className='nb bp';if(t==='g')document.getElementById('nb-g').className='nb bg';render()}
+function render(){rH();const m=document.getElementById('main');if(tab==='o')m.innerHTML=pO();else if(tab==='s')m.innerHTML=pS();else if(tab==='a')m.innerHTML=pA();else m.innerHTML=pG()}
+function rH(){const r=ld(),el=document.getElementById('hdr');if(tab==='s'){const ti=r.filter(x=>x.category==='tb').reduce((s,x)=>s+x.amount,0),to=r.filter(x=>x.category==='ts').reduce((s,x)=>s+x.amount,0),p=to-ti;el.innerHTML=`<div class="hdr-top">Portfolio</div><div class="hdr-title">股票投資<div class="hdr-sub">台股 ＋ 美股</div></div><div class="hero" style="margin-top:12px"><div class="hero-lbl">已實現損益</div><div class="hero-amt ${p>=0?'pos':'neg'}">${p>=0?'+':''}${fT(p)}</div><div class="chips"><div class="chip"><div class="chip-l">台股已實</div><div class="chip-v" style="color:var(--amber)">${fT(ti)}</div></div><div class="chip"><div class="chip-l">美股已實</div><div class="chip-v" style="color:var(--cyan)">${fU(r.filter(x=>x.category==='ub').reduce((s,x)=>s+x.amount,0))}</div></div></div></div>`}else if(tab==='g'){el.innerHTML=`<div class="hdr-top">Settings</div><div class="hdr-title">設定</div>`}else{const inc=r.filter(x=>cat(x.category).t==='i').reduce((s,x)=>s+x.amount,0),exp=r.filter(x=>cat(x.category).t==='e').reduce((s,x)=>s+x.amount,0),b=inc-exp;el.innerHTML=`<div class="hdr-top">Overview</div><div class="hdr-title">財務管家<div class="hdr-sub">收支總覽</div></div><div class="hero" style="margin-top:12px"><div class="hero-lbl">本期結餘</div><div class="hero-amt ${b>0?'pos':b<0?'neg':''}">${fT(Math.abs(b))}</div><div class="chips"><div class="chip"><div class="chip-l">收入</div><div class="chip-v" style="color:var(--green)">${fT(inc)}</div></div><div class="chip"><div class="chip-l">支出</div><div class="chip-v" style="color:var(--red)">${fT(exp)}</div></div></div></div>`}}
+function pO(){const r=ld().filter(x=>{const t=cat(x.category).t;return t==='i'||t==='e'}).slice(0,40);if(!r.length)return`<div class="page"><div class="empty"><span>📒</span>尚無收支記錄<br>點下方 ＋ 開始記帳</div></div>`;return`<div class="page"><div class="sec">收支記錄</div>`+r.map(x=>{const c=cat(x.category),isI=c.t==='i';return`<div class="card" onclick="openEdit('${x.id}')" style="cursor:pointer"><div class="ico">${c.i}</div><div style="flex:1;overflow:hidden"><div class="cn">${x.note||c.l}</div><div class="cm">${fD(x.date)}</div></div><div class="ca" style="color:${isI?'var(--green)':'var(--red)'}">${isI?'+':'-'}${fT(x.amount)}</div></div>`}).join('')+'</div>'}
+function pS(){const r=ld();const ti=r.filter(x=>x.category==='tb').reduce((s,x)=>s+x.amount,0),to=r.filter(x=>x.category==='ts').reduce((s,x)=>s+x.amount,0),ui=r.filter(x=>x.category==='ub').reduce((s,x)=>s+x.amount,0),uo=r.filter(x=>x.category==='us').reduce((s,x)=>s+x.amount,0),tp=to-ti,up=uo-ui;const cards=`<div class="stk2"><div class="sc"><span class="sc-flag">🇹🇼</span><div class="sc-name">台股</div><div class="sc-row"><span class="sc-l">買進</span><span class="sc-v">${fT(ti)}</span></div><div class="sc-row"><span class="sc-l">賣出</span><span class="sc-v">${fT(to)}</span></div><div class="sc-pnl"><span class="sc-pl">損益</span><span class="sc-pv" style="color:${tp>=0?'var(--green)':'var(--red)'}">${tp>=0?'+':''}${fT(tp)}</span></div></div><div class="sc"><span class="sc-flag">🇺🇸</span><div class="sc-name">美股</div><div class="sc-row"><span class="sc-l">買進</span><span class="sc-v">${fU(ui)}</span></div><div class="sc-row"><span class="sc-l">賣出</span><span class="sc-v">${fU(uo)}</span></div><div class="sc-pnl"><span class="sc-pl">損益</span><span class="sc-pv" style="color:${up>=0?'var(--green)':'var(--red)'}">${up>=0?'+':''}${fU(up)}</span></div></div></div>`;const sr=r.filter(x=>cat(x.category).t==='k').slice(0,50);const list=!sr.length?`<div class="empty"><span>📊</span>尚無股票記錄</div>`:sr.map(x=>{const c=cat(x.category),isU=c.m==='US',isB=c.a==='b';return`<div class="card" onclick="openEdit('${x.id}')" style="cursor:pointer"><div class="ico">${c.i}</div><div style="flex:1;overflow:hidden"><div class="cn">${x.note||c.l}</div><div class="cm">${fD(x.date)}${x.shares?' · '+x.shares+'股':''}</div></div><div class="ca"><div style="color:${isB?'var(--amber)':'var(--violet)'}">${isB?'-':'+'}${fA(x.amount,x.currency)}</div><span class="bdg ${isU?'bdg-us':'bdg-tw'}">${isU?'美股':'台股'}</span></div></div>`}).join('');return`<div class="page">${cards}<button class="btn-add" onclick="go('a');setTimeout(()=>sm('k'),30)">＋ 新增股票交易</button><div class="sec">交易記錄</div>${list}</div>`}
+function pA(){const tabs=`<div class="tabs"><button class="tab ${mode==='e'?'ae':''}" onclick="sm('e')">💸 支出</button><button class="tab ${mode==='i'?'ai':''}" onclick="sm('i')">💰 收入</button><button class="tab ${mode==='k'?'as':''}" onclick="sm('k')">📊 股票</button></div>`;let b='';if(mode==='e'||mode==='i'){const cs=mode==='e'?EX:IN;b=`<div class="fg"><label>類別</label><select id="fc">${cs.map(c=>`<option value="${c.id}">${c.i} ${c.l}</option>`).join('')}</select></div><div class="fg"><label>金額 NT$</label><input id="fa" type="number" inputmode="decimal" placeholder="0" class="big"></div><div class="fg"><label>備註（選填）</label><input id="fn" type="text" placeholder="例：午餐"></div><button class="btn ${mode==='e'?'btn-e':'btn-i'}" onclick="dA()">💾 儲存記錄</button>`}else{b=`<div class="fg"><label>交易類型</label><select id="fsc" onchange="sC()"><option value="tb">🇹🇼📈 台股買進</option><option value="ts">🇹🇼📉 台股賣出</option><option value="ub">🇺🇸📈 美股買進</option><option value="us">🇺🇸📉 美股賣出</option></select></div><div class="fg"><label>股票名稱 / 代號</label><input id="fn" type="text" placeholder="例：台積電 2330、NVDA"></div><div class="fg"><label id="fal">金額 NT$</label><input id="fa" type="number" inputmode="decimal" placeholder="0" class="big"></div><div class="fg"><label>股數（選填）</label><input id="fsh" type="number" inputmode="decimal" placeholder="例：1000"></div><button class="btn btn-s" onclick="dS()">💾 儲存交易</button>`}return`<div class="page"><div class="form">${tabs}${b}<button class="btn btn-c" onclick="go('o')">取消</button></div></div>`}
+function pG(){const r=ld(),k=r.filter(x=>cat(x.category).t==='k').length;return`<div class="page"><div class="sec">資料</div><div class="si"><div class="sr"><span>收支筆數</span><span class="sv">${r.length-k} 筆</span></div><div class="sr"><span>股票筆數</span><span class="sv">${k} 筆</span></div><div class="sr"><span>儲存方式</span><span class="sv">localStorage ✓</span></div><div class="sr"><span>離線使用</span><span class="sv">完全支援 ✓</span></div></div><div class="sec">清除</div><button class="btn-del" onclick="dc('e')">🗑️ 清除收支記錄</button><button class="btn-del" onclick="dc('k')">🗑️ 清除股票記錄</button><button class="btn-del" onclick="dc('a')" style="background:#2a2010;color:var(--amber);border-color:rgba(251,191,36,.2)">⚠️ 清除全部</button></div>`}
+function sm(m){mode=m;render()}
+function sC(){const v=document.getElementById('fsc').value,l=document.getElementById('fal');if(l)l.textContent='金額 '+(v==='ub'||v==='us'?'US$':'NT$')}
+function dA(){const c=document.getElementById('fc').value,a=document.getElementById('fa').value,n=document.getElementById('fn').value.trim();if(!a||isNaN(+a)||+a<=0){alert('請輸入有效金額');return}const r=ld();r.unshift({id:Date.now(),category:c,amount:Math.round(+a),note:n,currency:'TWD',date:new Date().toISOString()});sv(r);go('o')}
+function dS(){const c=document.getElementById('fsc').value,a=document.getElementById('fa').value,n=document.getElementById('fn').value.trim(),sh=document.getElementById('fsh').value,isU=c==='ub'||c==='us';if(!a||isNaN(+a)||+a<=0){alert('請輸入有效金額');return}if(!n){alert('請輸入股票名稱');return}const r=ld();r.unshift({id:Date.now(),category:c,amount:isU?parseFloat((+a).toFixed(2)):Math.round(+a),note:n,currency:isU?'USD':'TWD',shares:sh?+sh:null,date:new Date().toISOString()});sv(r);go('s')}
+function dc(s){if(!confirm('確定清除？無法復原'))return;if(s==='a'){localStorage.removeItem(K)}else{sv(ld().filter(x=>{const t=cat(x.category).t;return s==='k'?t!=='k':t==='k'}))}render()}
+
+function openEdit(id){
+  const r=ld(),x=r.find(v=>String(v.id)===String(id));
+  if(!x)return;
+  const c=cat(x.category),isStk=c.t==='k',isUS=x.currency==='USD';
+  const allCats=isStk?ST:(c.t==='i'?IN:EX);
+  const opts=allCats.map(ct=>`<option value="${ct.id}" ${ct.id===x.category?'selected':''}>${ct.i} ${ct.l}</option>`).join('');
+  const stkOpts=[
+    {id:'tb',l:'🇹🇼📈 台股買進'},{id:'ts',l:'🇹🇼📉 台股賣出'},
+    {id:'ub',l:'🇺🇸📈 美股買進'},{id:'us',l:'🇺🇸📉 美股賣出'}
+  ].map(ct=>`<option value="${ct.id}" ${ct.id===x.category?'selected':''}>${ct.l}</option>`).join('');
+  const sharesField=isStk?`<div class="fg"><label>股數（選填）</label><input id="esh" type="number" inputmode="decimal" value="${x.shares||''}" placeholder="例：1000"></div>`:'';
+  const catField=isStk
+    ?`<div class="fg"><label>交易類型</label><select id="ecat" onchange="eSync()">${stkOpts}</select></div>`
+    :`<div class="fg"><label>類別</label><select id="ecat">${opts}</select></div>`;
+  const div=document.createElement('div');
+  div.className='modal-overlay';
+  div.id='edit-modal';
+  div.innerHTML=`<div class="modal">
+    <div class="modal-title">✏️ 編輯記錄</div>
+    ${catField}
+    <div class="fg"><label>備註</label><input id="en" type="text" value="${x.note||''}" placeholder="備註"></div>
+    <div class="fg"><label id="eal">金額（${isUS?'US$':'NT$'}）</label><input id="ea" type="number" inputmode="decimal" value="${x.amount}" class="big"></div>
+    ${sharesField}
+    <div class="modal-btns">
+      <button class="btn-del2" onclick="delRec('${x.id}')">🗑️ 刪除</button>
+      <button class="btn-save2" onclick="saveEdit('${x.id}')">💾 儲存</button>
+    </div>
+    <button class="btn btn-c" onclick="closeEdit()" style="margin-top:6px">取消</button>
+  </div>`;
+  div.addEventListener('click',e=>{if(e.target===div)closeEdit()});
+  document.body.appendChild(div);
+}
+function eSync(){
+  const v=document.getElementById('ecat').value,l=document.getElementById('eal');
+  if(l)l.textContent='金額（'+(v==='ub'||v==='us'?'US$':'NT$')+'）';
+}
+function closeEdit(){const m=document.getElementById('edit-modal');if(m)m.remove()}
+function saveEdit(id){
+  const a=document.getElementById('ea').value,n=document.getElementById('en').value.trim(),c=document.getElementById('ecat').value;
+  const sh=document.getElementById('esh');
+  if(!a||isNaN(+a)||+a<=0){alert('請輸入有效金額');return}
+  const isUS=c==='ub'||c==='us';
+  const r=ld(),i=r.findIndex(x=>String(x.id)===String(id));
+  if(i<0)return;
+  r[i]={...r[i],category:c,amount:isUS?parseFloat((+a).toFixed(2)):Math.round(+a),note:n,currency:isUS?'USD':'TWD',shares:sh&&sh.value?+sh.value:null};
+  sv(r);closeEdit();render();
+}
+function delRec(id){
+  if(!confirm('確定刪除這筆記錄？'))return;
+  sv(ld().filter(x=>String(x.id)!==String(id)));closeEdit();render();
+}
+render();
+</script></body></html>
