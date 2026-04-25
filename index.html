@@ -1,457 +1,204 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>讓你無言語錄</title>
+<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><link rel="apple-touch-icon" sizes="180x180" href="icon.png">
 
-<!-- iOS 加入主畫面 -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="無言語錄">
-<link rel="apple-touch-icon" href="icon.png">
-
-<!-- Android / 通用 -->
-<meta name="theme-color" content="#08080f">
-<link rel="manifest" href="manifest.json">
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    min-height: 100vh;
-    background: radial-gradient(ellipse at 45% 35%, #0d0d18 0%, #080810 55%, #090910 100%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Hiragino Sans', 'Noto Sans TC', sans-serif;
-    padding: 24px 16px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .orb1 {
-    position: fixed; top: 8%; left: 12%;
-    width: 480px; height: 480px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(50,70,160,0.05) 0%, transparent 70%);
-    pointer-events: none; z-index: 0;
-    animation: orbDrift 14s ease-in-out infinite;
-  }
-  .orb2 {
-    position: fixed; bottom: 8%; right: 10%;
-    width: 360px; height: 360px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(60,120,200,0.04) 0%, transparent 70%);
-    pointer-events: none; z-index: 0;
-    animation: orbDrift 10s ease-in-out infinite reverse;
-  }
-  .vignette {
-    position: fixed; inset: 0; pointer-events: none; z-index: 0;
-    background: radial-gradient(ellipse at center, transparent 28%, rgba(0,0,0,0.72) 100%);
-  }
-
-  .header {
-    text-align: center;
-    margin-bottom: 18px;
-    z-index: 1;
-  }
-  .header-sub {
-    color: rgba(160,180,220,0.2);
-    font-size: 9px;
-    letter-spacing: 8px;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-  }
-  .header-title {
-    font-size: 22px;
-    font-weight: 300;
-    color: rgba(200,215,240,0.72);
-    margin: 0 0 10px;
-    letter-spacing: 7px;
-  }
-  .header-line {
-    width: 80px; height: 1px; margin: 0 auto;
-    background: linear-gradient(90deg, transparent, rgba(160,180,220,0.18), transparent);
-  }
-
-  /* ── Glass panel ── */
-  .mirror {
-    position: relative;
-    width: 320px; height: 420px;
-    flex-shrink: 0;
-    border-radius: 24px;
-    cursor: pointer;
-    z-index: 1;
-    background: rgba(13,15,24,0.4);
-    backdrop-filter: blur(16px) saturate(1.06);
-    -webkit-backdrop-filter: blur(16px) saturate(1.06);
-    border: 1px solid rgba(255,255,255,0.09);
-    box-shadow:
-      0 12px 40px rgba(0,0,0,0.6),
-      inset 0 1px 0 rgba(255,255,255,0.14),
-      inset 1px 0 0 rgba(255,255,255,0.07),
-      inset 0 -1px 0 rgba(255,255,255,0.03);
-    overflow: hidden;
-    user-select: none;
-  }
-  .mirror.waiting { cursor: default; }
-
-  canvas {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
-    pointer-events: none; z-index: 0;
-  }
-  .surface-line {
-    position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
-    background: rgba(255,255,255,0.16);
-    pointer-events: none; z-index: 1;
-  }
-  .top-fade {
-    position: absolute; top: 0; left: 0; right: 0; height: 36px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
-    pointer-events: none; z-index: 1;
-  }
-  .left-glare {
-    position: absolute; left: 0; top: 15%; bottom: 15%; width: 1px;
-    background: linear-gradient(180deg, transparent, rgba(255,255,255,0.12), transparent);
-    pointer-events: none; z-index: 1;
-  }
-  .refraction {
-    position: absolute; top: -30%; left: 28%; width: 14%; height: 160%;
-    background: linear-gradient(110deg, transparent, rgba(255,255,255,0.022), transparent);
-    pointer-events: none; z-index: 1;
-  }
-
-  /* Ripple */
-  .ripple-wrap {
-    position: absolute; inset: 0; z-index: 3;
-    display: flex; align-items: center; justify-content: center;
-    pointer-events: none;
-  }
-  .ripple-ring {
-    position: absolute;
-    width: 44px; height: 44px; border-radius: 50%;
-    border: 1px solid rgba(180,210,240,0.4);
-    animation: rippleOut 0.85s ease-out forwards;
-  }
-
-  /* Content layer */
-  .content {
-    position: absolute; inset: 0; z-index: 2;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    padding: 36px 30px;
-    overflow-y: auto;
-  }
-
-  /* Idle */
-  .glyph {
-    font-size: 32px; margin-bottom: 18px;
-    color: rgba(160,185,220,0.9); font-weight: 100;
-    animation: glyphPulse 4s ease-in-out infinite;
-  }
-  .idle-main {
-    color: rgba(160,185,220,0.26); font-size: 12px;
-    letter-spacing: 5px; margin-bottom: 4px;
-  }
-  .idle-sub {
-    color: rgba(130,155,200,0.14); font-size: 9px; letter-spacing: 3px;
-  }
-  #idle-content { animation: fadeIn 0.5s ease; }
-
-  /* Ripple text */
-  #ripple-content {
-    color: rgba(160,190,230,0.3); font-size: 13px; letter-spacing: 6px;
-  }
-
-  /* Reveal */
-  #reveal-content { width: 100%; animation: fadeIn 0.55s ease both; }
-
-  .tag-row {
-    display: flex; align-items: center; gap: 10px;
-    margin-bottom: 20px;
-    animation: fadeUp 0.45s 0.1s ease both;
-  }
-  .tag-line-l, .tag-line-r {
-    flex: 1; height: 1px;
-  }
-  .tag-label {
-    font-size: 9px; letter-spacing: 5px;
-  }
-  .quote-text {
-    font-size: 15px; line-height: 2.1;
-    margin: 0 0 28px; font-weight: 300; letter-spacing: 0.6px;
-    color: rgba(200,215,240,0.84);
-    white-space: pre-wrap;
-    animation: fadeUp 0.55s 0.2s ease both;
-  }
-  .footer-row {
-    display: flex; justify-content: space-between; align-items: center;
-    border-top: 1px solid rgba(255,255,255,0.06); padding-top: 14px;
-    animation: fadeUp 0.45s 0.36s ease both;
-  }
-  .num {
-    color: rgba(130,155,200,0.22); font-size: 9px; letter-spacing: 3px;
-  }
-  .btn-again {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: rgba(175,205,235,0.55);
-    padding: 6px 16px; border-radius: 18px;
-    font-size: 10px; letter-spacing: 3px;
-    cursor: pointer; transition: background 0.2s;
-    font-family: inherit;
-  }
-  .btn-again:hover { background: rgba(255,255,255,0.1); }
-
-  /* Hidden */
-  .hidden { display: none !important; }
-
-  @keyframes fadeIn   { from{opacity:0} to{opacity:1} }
-  @keyframes fadeUp   { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes orbDrift { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-22px)} }
-  @keyframes glyphPulse { 0%,100%{opacity:0.18;transform:scale(1)} 50%{opacity:0.3;transform:scale(1.05)} }
-  @keyframes rippleOut  { 0%{transform:scale(1);opacity:0.55} 100%{transform:scale(6);opacity:0} }
-</style>
-</head>
-<body>
-
-<div class="orb1"></div>
-<div class="orb2"></div>
-<div class="vignette"></div>
-
-<div class="header">
-  <div class="header-sub" style="visibility:hidden">placeholder</div>
-  <h1 class="header-title">讓 你 無 言 語 錄</h1>
-  <div class="header-line"></div>
+  <meta name="theme-color" content="#1a1a1a">
+  <meta name="apple-mobile-web-app-capable" content="yes"><title>財務管家</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#1a1a1a;--card:#242424;--border:#333;--text:#f5f0e8;--dim:rgba(245,240,232,.6);--faint:rgba(245,240,232,.38);--green:#6ee7b7;--red:#fb7185;--amber:#fbbf24;--violet:#c084fc;--cyan:#67e8f9}
+html,body{height:100%;background:var(--bg);font-family:-apple-system,"PingFang TC",sans-serif;color:var(--text);-webkit-tap-highlight-color:transparent}
+#app{max-width:430px;margin:0 auto;height:100vh;height:-webkit-fill-available;display:flex;flex-direction:column;background:var(--bg)}
+.hdr{padding:20px 18px 16px;background:var(--bg)}
+.hdr-top{font-size:11px;color:var(--faint);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
+.hdr-title{font-size:24px;font-weight:700;color:var(--text)}
+.hdr-sub{font-size:12px;color:var(--dim);margin-top:2px}
+.hero{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;margin:0 18px 0}
+.hero-lbl{font-size:11px;color:var(--dim);letter-spacing:.8px;margin-bottom:6px}
+.hero-amt{font-size:34px;font-weight:700;letter-spacing:-1px}
+.hero-amt.pos{color:var(--green)}
+.hero-amt.neg{color:var(--red)}
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.chip{background:#1e1e1e;border:1px solid var(--border);border-radius:11px;padding:10px 12px}
+.chip-l{font-size:11px;color:var(--dim);margin-bottom:3px}
+.chip-v{font-size:14px;font-weight:700}
+main{flex:1;overflow-y:auto;padding:16px 18px 90px}
+main::-webkit-scrollbar{display:none}
+.sec{font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--faint);margin:16px 0 8px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:13px 14px;margin-bottom:7px;display:flex;align-items:center;gap:11px}
+.ico{width:40px;height:40px;border-radius:11px;background:#2a2a2a;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;overflow:hidden}
+.cn{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cm{font-size:11px;color:var(--dim);margin-top:2px}
+.ca{font-size:14px;font-weight:700;text-align:right;flex-shrink:0;margin-left:auto}
+.bdg{display:block;font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;margin-top:3px;text-align:center}
+.bdg-tw{background:rgba(103,232,249,.12);color:var(--cyan);border:1px solid rgba(103,232,249,.2)}
+.bdg-us{background:rgba(110,231,183,.1);color:var(--green);border:1px solid rgba(110,231,183,.2)}
+.empty{text-align:center;padding:48px 0;color:var(--faint);font-size:13px}
+.empty span{display:block;font-size:40px;margin-bottom:10px;opacity:.6}
+.stk2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 12px}
+.sc-flag{font-size:20px;margin-bottom:6px;display:block}
+.sc-name{font-size:11px;color:var(--dim);margin-bottom:8px}
+.sc-row{display:flex;justify-content:space-between;margin-bottom:4px}
+.sc-l{font-size:11px;color:var(--faint)}
+.sc-v{font-size:11px;font-weight:600;color:var(--dim)}
+.sc-pnl{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.sc-pl{font-size:10px;color:var(--faint)}
+.sc-pv{font-size:13px;font-weight:700}
+.form{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px}
+.ftitle{font-size:16px;font-weight:700;text-align:center;margin-bottom:16px}
+.tabs{display:flex;background:#1a1a1a;border-radius:12px;padding:3px;gap:2px;margin-bottom:16px}
+.tab{flex:1;border:none;background:none;border-radius:10px;padding:9px 2px;font-size:12px;font-weight:700;color:var(--faint);cursor:pointer;font-family:inherit;transition:all .15s}
+.tab.ae{background:#2d1a1e;color:var(--red);border:1px solid rgba(251,113,133,.25)}
+.tab.ai{background:#1a2d22;color:var(--green);border:1px solid rgba(110,231,183,.25)}
+.tab.as{background:#221a2d;color:var(--violet);border:1px solid rgba(192,132,252,.25)}
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--faint);margin-bottom:5px}
+.fg select,.fg input{width:100%;padding:12px 14px;background:#1a1a1a;border:1px solid var(--border);border-radius:11px;font-size:15px;color:var(--text);-webkit-appearance:none;outline:none;font-family:inherit}
+.fg select option{background:#1e1e1e}
+.big{font-size:26px!important;text-align:center;font-weight:700}
+.btn{width:100%;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;color:var(--text)}
+.btn-e{background:linear-gradient(135deg,#f43f5e,#e11d48)}
+.btn-i{background:linear-gradient(135deg,#10b981,#059669)}
+.btn-s{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
+.btn-c{background:none;color:var(--faint);font-size:13px;padding:10px}
+.btn-add{width:100%;background:linear-gradient(135deg,#8b5cf6,#6d28d9);border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;color:var(--text);cursor:pointer;font-family:inherit;margin-bottom:8px}
+.btn-del{width:100%;background:#2a1a1a;color:var(--red);border:1px solid rgba(251,113,133,.2);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:7px}
+.si{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:8px}
+.sr{display:flex;justify-content:space-between;align-items:center;padding:13px 15px;border-bottom:1px solid var(--border);font-size:14px}
+.sr:last-child{border-bottom:none}
+.sv{font-size:12px;color:var(--dim)}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#111;border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;padding:10px 16px;padding-bottom:max(10px,env(safe-area-inset-bottom));z-index:99}
+nav::before{content:'';position:absolute;bottom:100%;left:0;right:0;height:50px;background:linear-gradient(to bottom,transparent,#1a1a1a);pointer-events:none}
+.nb{background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-family:inherit;color:var(--faint);font-size:10px;font-weight:600;padding:4px 12px}
+.nb .ni{font-size:21px}
+.nb.bc{color:var(--cyan)}
+.nb.bp{color:var(--violet)}
+.nb.bg{color:var(--dim)}
+.nb-plus{background:linear-gradient(135deg,#38bdf8,#818cf8);border:none;width:50px;height:50px;border-radius:50%;font-size:26px;color:#fff;cursor:pointer;margin-top:-14px;outline:4px solid #111;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:#1e1e1e;border:1px solid #333;border-radius:20px 20px 0 0;padding:20px 18px;width:100%;max-width:430px;padding-bottom:max(20px,env(safe-area-inset-bottom))}
+.modal-title{font-size:16px;font-weight:700;text-align:center;color:var(--text);margin-bottom:16px}
+.modal-btns{display:flex;gap:8px;margin-top:4px}
+.btn-del2{flex:1;background:#2d1a1e;color:var(--red);border:1px solid rgba(251,113,133,.25);border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-save2{flex:2;background:linear-gradient(135deg,#38bdf8,#818cf8);color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.page{animation:pi .18s ease}
+@keyframes pi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+</style></head><body>
+<div id="app">
+  <div class="hdr" id="hdr"></div>
+  <main id="main"></main>
+  <nav>
+    <button class="nb bc" id="nb-o" onclick="go('o')"><span class="ni">◈</span>總覽</button>
+    <button class="nb" id="nb-s" onclick="go('s')"><span class="ni">◉</span>股票</button>
+    <button class="nb-plus" onclick="go('a')">＋</button>
+    <button class="nb" id="nb-g" onclick="go('g')"><span class="ni">◎</span>設定</button>
+  </nav>
 </div>
-
-<div class="mirror" id="mirror">
-  <canvas id="canvas" width="320" height="420"></canvas>
-  <div class="surface-line"></div>
-  <div class="top-fade"></div>
-  <div class="left-glare"></div>
-  <div class="refraction"></div>
-
-  <div class="ripple-wrap hidden" id="ripple-wrap"></div>
-
-  <div class="content">
-    <!-- IDLE -->
-    <div id="idle-content">
-      <div style="text-align:center">
-        <div class="glyph">○</div>
-        <div class="idle-main">想知道嗎</div>
-        <div class="idle-sub">那點一下</div>
-      </div>
-    </div>
-
-    <!-- RIPPLE -->
-    <div id="ripple-content" class="hidden">∿</div>
-
-    <!-- REVEAL -->
-    <div id="reveal-content" class="hidden">
-      <div class="tag-row">
-        <div class="tag-line-l" id="tag-line-l"></div>
-        <span class="tag-label" id="tag-label"></span>
-        <div class="tag-line-r" id="tag-line-r"></div>
-      </div>
-      <p class="quote-text" id="quote-text"></p>
-      <div class="footer-row">
-        <span class="num" id="quote-num"></span>
-        <button class="btn-again" id="btn-again">我 還 要</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <script>
-const quotes = [
-  { id: 1, text: "醫生：你這耳朵都潰爛了要去看耳科\n\n護士：他都幾歲了沒辦法看兒科\n\n醫生：ear ear\n\n護士：34？", tag: "醫院" },
-  { id: 2, text: "本人从未在互联网上侮辱过中共，本人虽然身为台湾岛的岛民，但是实际上经常研究社会主义，经过长时间的关注，我发现社会主义才是真正的第一社会制度。对于现如今发生的一切事情，我深感抱歉，并非常愧疚。我在此发誓，从此不再与资本主义有任何联系，特写此书以表愧意，临表涕零，不知所言。", tag: "政治" },
-  { id: 3, text: "心動是本能\n忠誠是選擇", tag: "感情" },
-  { id: 4, text: "去看皮膚科 醫生說我的臉被細菌感染\n\n報告出來結果是英菌。", tag: "醫院" },
-  { id: 5, text: "我討厭喜歡聽團的人\n他們個個不思進取 自我陶醉 無能狂怒\n以傷害和仇恨作為糧食\n他們以為穿古著是為了證明自己獨特有品味\n接著拍照在社群媒體上尋求認同\n結論是他們還是在意爆了別人的看法\n\n晚上在社群上佯裝自己是社交王嘲笑他人\n接著打開電腦 替自己掛號精神科治療憂鬱症\n是自卑和自滿的矛盾綜合體 是世界上的bug", tag: "觀察" },
-  { id: 6, text: "我不喜歡去夜店\n那裡只有情慾流動的男女\n沒有書 沒有知識的海洋\n到那裡只會讓我們不思進取\n是我成功方向的絆腳石", tag: "觀察" },
-  { id: 7, text: "你穿著「情懷」外衣，用這種廉價的精神鴉片來麻痹真實的自我。而掩滅在這件外衣裡面的，是你一事無成的恥辱，沉溺現狀的焦慮，面對責任的懦弱，認清現實的惶恐，吹彈可破的虛榮，苦心經營的體面⋯⋯", tag: "文學" },
-  { id: 8, text: "那時我們有夢，關於文學，關於愛情，關於穿越世界的旅行。如今我們深夜飲酒，杯子碰到一起，都是夢破碎的聲音。", tag: "文學" },
-  { id: 9, text: "你的意思是我複製的嗎？好啊，在你心裡我就是這樣一個虛偽的人對嗎？你根本不懂我！我親手打出的字你居然這樣說！你可以說我，但你不可以說我打的字呀！！這個世界上就沒有人懂我！！我想，或許我消失了就最好吧。根本沒有人在乎我！我能怎麼辦？看到你37℃的手指打出這樣冷冰冰的字，我能有什麼辦法？這些字就像一把把刀子插入我的胸口。現在我已經死去了，至少我的靈魂已經死了！", tag: "名著" },
-  { id: 10, text: "男人三大錯覺：手機震動、我能反殺、她喜歡我😳😳\n\n女人三大錯覺：才買一點、他在偷吃、我能改變他🥺🥺\n\n全人類的錯覺：我點這些吃得完", tag: "人類" },
-  { id: 11, text: "昨天在夜店門口被安管攔了下來，\n我說我滿18了但他還是不肯讓我進去\n我問他為什麼\n他告訴我：\n\n「深情的人不去濫情的地方」", tag: "夜店" },
-  { id: 12, text: "跟美髮人士交往：燙染護髮全部免費\n跟餐飲人士交往：你愛吃他就做給你\n跟賣古著的交往：穿不完的免費衣服\n跟健身行業交往：陪你調整身體健康\n跟醫生交往：他不會做以上的事情，但會給你零用錢讓你做以上的事情\n跟長髮男人交往：\n免費性病和婦科疾病、免費帶你去一些好山好水的地方體驗性愛（車上、山上、公廁）、免費的綠帽子、免費的草（都分享）、免費古曼童、免費的憂鬱症或躁鬱症或糟糕的內心狀態", tag: "感情" },
-  { id: 13, text: "剛剛拿著我的最新三星摺疊手機，在夜店跟DJ點了一首慢一點的歌被安管攔了下來，\n我問他說為什麼他不讓我點慢歌\n他告訴我：\n「三星的人別聽慢歌」", tag: "夜店" },
-  { id: 14, text: "為什麼隕石坑都剛好出現在觀光區旁邊", tag: "哲學" },
-  { id: 15, text: "如果洗完澡的我們是乾淨的 那為什麼浴巾還是會髒", tag: "哲學" },
-  { id: 16, text: "一個半小時到底是30分鐘還是90分鐘", tag: "哲學" },
-  { id: 17, text: "一睜開眼睛就會亮一閉眼睛就會暗我會是冰箱嗎", tag: "哲學" },
-  { id: 18, text: "在宇宙慢跑算是有氧運動還是無氧運動", tag: "哲學" },
-  { id: 19, text: "月老給你爛桃花是因為你對別人來說是好的桃花", tag: "感情" },
-  { id: 20, text: "四個周杰倫就是一個月杰倫", tag: "哲學" },
-  { id: 21, text: "太空有空間站太擠就沒有空間站", tag: "哲學" },
-  { id: 22, text: "南水北調就是從台南憋尿到台北", tag: "哲學" },
-  { id: 23, text: "細麵是比較細的麵，粗麵是當你不想粗飯的時候可以粗麵", tag: "哲學" },
-  { id: 24, text: "為什麼西點軍校畢業的不會做蛋糕", tag: "哲學" },
-  { id: 25, text: "為什麼小黃瓜明明就是綠色的 卻不叫小綠瓜", tag: "哲學" },
-  { id: 26, text: "空腹不能喝牛奶 那剛出生的小牛是不是就要餓死了", tag: "哲學" },
-  { id: 27, text: "典韋馬下無敵，呂布馬上無敵，曹操想要一統天下那他為什麼不讓呂布騎著典韋", tag: "哲學" },
-  { id: 28, text: "宿舍四個人你只能看到三個人 宿舍六個人你只能看到五個人", tag: "哲學" },
-  { id: 29, text: "拭目いたい", tag: "哲學" },
-  { id: 30, text: "為什麼吃85°c的蛋糕的時候都不用吹一下不會燙嗎", tag: "哲學" },
-  { id: 31, text: "我們明明是站電梯 為什麼要說坐電梯", tag: "哲學" },
-  { id: 32, text: "監獄裡那麼多罪犯 為什麼警察不去監獄抓", tag: "哲學" },
-  { id: 33, text: "無名指明明就有名字", tag: "哲學" },
-  { id: 34, text: "為什麼冰箱是櫃子冰櫃是箱子", tag: "哲學" },
-  { id: 35, text: "警察下班後打警察還算襲警嗎", tag: "哲學" },
-  { id: 36, text: "為什麼我們都要說吹冷氣明明是冷氣在吹我們", tag: "哲學" },
-  { id: 37, text: "眼鏡被發明之前，眼鏡蛇叫什麼", tag: "哲學" },
-  { id: 38, text: "第一個擠牛奶的人到底有多色", tag: "哲學" },
-  { id: 39, text: "如果一個不法分子搶了我10塊，我從他兜裡順回來20，這樣算不算防衛過當", tag: "哲學" },
-  { id: 40, text: "從台南憋尿到台北算是南水北調嗎", tag: "哲學" },
-  { id: 41, text: "我是不是只要把內褲反著穿 這樣整個宇宙都穿著我的內褲 我會是唯一沒穿內褲的那個人嗎", tag: "哲學" },
-  { id: 42, text: "去搶劫的路上用google地圖找路 這樣google算共犯嗎", tag: "哲學" },
-  { id: 43, text: "為什麼高速公路會塞車 最前面的走快一點不就好了", tag: "哲學" },
-  { id: 44, text: "如果說總統是人民公僕，那蔡英文算一種女僕嗎", tag: "哲學" },
-  { id: 45, text: "咖啡算是一種豆漿嗎", tag: "哲學" },
-  { id: 46, text: "茶算是一種蔬菜湯嗎", tag: "哲學" },
-  { id: 47, text: "螃蟹會覺得魚在飛嗎", tag: "哲學" },
-  { id: 48, text: "用電鰻的電電電鰻電鰻會被電鰻的電電死嗎", tag: "哲學" },
-  { id: 49, text: "用刺蝟的刺去刺刺蝟刺蝟會被刺蝟的刺刺到還是被刺蝟的刺擋住", tag: "哲學" },
-  { id: 50, text: "用毒蛇的毒毒毒蛇毒蛇會被毒毒死還是體內的毒素會把毒毒蛇的毒以毒攻毒擋掉", tag: "哲學" },
-  { id: 51, text: "丼飯就是比較大的壽司", tag: "哲學" },
-  { id: 52, text: "壽司就是沒包好的飯糰", tag: "哲學" },
-  { id: 53, text: "海鮮煎餅就是散掉的章魚燒", tag: "哲學" },
-  { id: 54, text: "章魚燒是章魚口味的車輪餅", tag: "哲學" },
-  { id: 55, text: "近親不能結婚 為什麼我爸爸可以娶我媽媽", tag: "哲學" },
-  { id: 56, text: "一直吃止痛藥會肚子痛嗎", tag: "哲學" },
-  { id: 57, text: "你最新的照片是你最老的照片", tag: "哲學" },
-  { id: 58, text: "分一半其實就是分兩半", tag: "哲學" },
-  { id: 59, text: "狗狗看到警犬會覺得警察來了嗎", tag: "哲學" },
-  { id: 60, text: "自殺的人算不算成功殺死一個想要殺死自己的人", tag: "哲學" },
-  { id: 61, text: "為什麼修車的叫黑手 洗錢的叫車手", tag: "哲學" },
-  { id: 62, text: "懷孕的媽媽去游泳算不算一台寶寶潛水艇", tag: "哲學" },
-  { id: 63, text: "孕婦打架算群毆嗎", tag: "哲學" },
-  { id: 64, text: "七個半小時=三個半小時=一個半小時=半小時", tag: "哲學" },
-  { id: 65, text: "鬱金香沒有你的浴巾香", tag: "哲學" },
-  { id: 66, text: "所以如果易烊千璽搬家\n算是一種易烊遷徙嗎", tag: "哲學" },
-  { id: 67, text: "吃麻婆豆腐會被麻婆打嗎", tag: "哲學" },
-  { id: 68, text: "打是情 罵是23", tag: "哲學" },
-  { id: 69, text: "我打了我自己一拳，覺得很痛，這樣我算是強還是弱？", tag: "哲學" },
-  { id: 70, text: "等紅燈其實是等綠燈", tag: "哲學" },
-  { id: 71, text: "有一個花蓮原住民去面試\n面試官：你做什麼的\n原住民：台大歷史\n面試官：讀歷史很好啊\n原住民：沒有啦 我說\n\n\n\n\n我是抬大理石的啦", tag: "冷笑話" },
-  { id: 72, text: "交友軟體上遇見一個妹妹，\n我：妳喜歡怎麼玩？\n她說捆綁、狗奴、野外都可以配合。\n：啊你喜歡怎麼玩？\n\n我說我喜歡抱著接吻、牽手一起看日落、\n一起吃早餐、一起養貓、\n早上醒來擁著對方在懷裡說早安、\n難過時擦乾彼此的眼淚。\n\n她說你要求太多了，然後把我封鎖了。", tag: "感情" },
-  { id: 73, text: "看大家紛紛在準備3/14情人節\n真浪漫\n彷彿回到那年盛夏\n\n\n\n\n盛夏我在醜", tag: "人類" },
-  { id: 74, text: "5歲的侄子在洗澡時，\n一直盯著自己的蛋蛋並問道：\n媽媽，這是我的大腦嗎？\n\n媽媽：目前還不是。", tag: "人類" },
-  { id: 75, text: "那天車窗起霧\n我在窗上寫了你全家的名字\n後來霧散了\n你全家也沒了", tag: "感情" },
-  { id: 76, text: "台灣2300萬人口，你有人口嗎", tag: "冷笑話" },
-  { id: 77, text: "還記得之前去一間牙醫診所應徵牙醫\n一開始聊得還不錯\n後來看了一下我的履歷直接say no\n我問他為什麼\n他說因為我是應外系\n\n是怎樣 應外系怎麼了嗎==", tag: "冷笑話" },
-  { id: 78, text: "最多有趣靈魂的地方應該是靈骨塔吧", tag: "哲學" },
-  { id: 79, text: "突然看到以前的漂亮學妹嫁給富商\n一般這種時候要 羨慕學妹 還是 羨慕富商 ？", tag: "人類" },
-  { id: 80, text: "剛剛跟一個女生聊天\n\n女：你現在存款有多少啊\n我：大概100w\n女：真假也太多好羨慕\n我：也還好啦w\n\n後來就已讀不回了……", tag: "感情" },
-  { id: 81, text: "上班第一天老闆說我很有天份\n就升我當經理了\n有人想吸吸我的升職氣嗎", tag: "職場" },
-  { id: 82, text: "老闆說因為我很努力工作\n今年薪水幫我從$26400調到$27470\n努力果然會有收穫\n共勉之", tag: "職場" },
-  { id: 83, text: "長相上一代遺傳的\n規則上一代制定的\n觀念上一代教育的\n環境上一代破壞的\n居然還好意思說一代不如一代", tag: "觀察" },
-  { id: 84, text: "哥布林領主提醒你：\n1，節假日是不可以出去的，外面很喧嘩，但他們都不是你的同類\n2，哥布林是大多獨居性生物，沒有人想做他的配偶，如果有人邀請你並對你產生好感，請斷絕與他的聯系\n3，不要照鏡子\n4，所有誇讚你自信的人，他們不了解你，可以不與他們交流\n5，遠離不再是哥布林的人\n6，在地洞中可以看看同族小醜哥布林追求精靈失敗的樂子幸災樂禍一下解解悶\n7，她只是想把你從巢穴中騙出去殺掉練級，但是族群會永遠保護你，等你回家", tag: "人類" },
-  { id: 85, text: "輸在哪兒？輸在給不了人家安全感，輸在你整天打遊戲好吃懶做，輸在不去爭取而是想得到，輸在沒房沒車還想著自己能幹大事兒，你輸在一個月3000塊錢，你就安於現狀了。你輸在哪兒？輸在你心裡沒數啊。人家贏在內在，贏在學識，贏在成熟穩重，贏在風趣幽默，贏在低谷時的堅韌不拔，贏在登頂時的波瀾不驚，他或許溫文爾雅，憂鬱知性，他明明那麼多種可能，你卻只能拿這自己為數不多的本錢，在互聯網上喋喋不休的訴說著內心的不平衡。或許卑微如鼠的內心也希望能找到一群人同你一起嘲笑別人的長相，輸在了你連最基本的尊重都沒有，輸在了你帶有色眼鏡去看別人，輸在了你見不得別人幸福。", tag: "名著" },
-  { id: 86, text: "在進考場的一瞬間有點想妳\n於是我在試卷上寫滿妳的名字\n\n結果…全對\n\n老師告訴我：\n愛一個人是沒有錯的", tag: "感情" },
-];
+document.addEventListener('DOMContentLoaded',()=>{
+  const s=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  s.setAttribute('style','position:absolute;width:0;height:0;overflow:hidden');
+  s.innerHTML=`<defs>
+    <filter id="glass-blur"><feGaussianBlur stdDeviation="6"/></filter>
+    <linearGradient id="glass-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="white" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0.05"/>
+    </linearGradient>
+  </defs>`;
+  document.body.prepend(s);
+});
 
-const tagColors = {
-  醫院:"#A8E6CF", 政治:"#b09ae0", 感情:"#e07070", 觀察:"#7EB8F7",
-  文學:"#d4a830", 名著:"#e09060", 人類:"#4ab8b0", 夜店:"#e8c84a",
-  哲學:"#9ab0c8", 冷笑話:"#c8d4e0", 職場:"#80c8b0",
-};
+const LG_FORK='🍴';
+const LG_TRANS='🚗';
+const LG_PLAY='🎧';
+const LG_HOUSE='🏠';
+const LG_MED='💊';
+const LG_SHOP='🛍️';
+const LG_OTHER='•••';
+const LG_SAL='💴';
+const LG_BON='🎁';
+const LG_INV='📈';
+const LG_TW='🇹🇼';
+const LG_US_MAP='🇺🇸';
+const LG_BANK='🐷';
+const LG_GEM='💎';
 
-// Canvas shimmer
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const W = 320, H = 420;
-let t = 0;
-function drawShimmer() {
-  ctx.clearRect(0, 0, W, H);
-  for (let y = 0; y < H; y += 5) {
-    const wave = Math.sin(y*0.016+t*0.5)*2.5 + Math.sin(y*0.031+t*0.35+1.1)*1.5 + Math.sin(y*0.008+t*0.8+2.4)*1;
-    const a = 0.01 + Math.abs(Math.sin(y*0.018+t*0.25))*0.009;
-    ctx.strokeStyle = `rgba(180,200,230,${a})`;
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(wave, y); ctx.lineTo(wave+W, y); ctx.stroke();
-  }
-  for (let x = 0; x < W; x += 38) {
-    const sh = Math.sin(x*0.04+t*0.45)*5;
-    const a = 0.004 + Math.abs(Math.sin(x*0.07+t*0.3))*0.007;
-    ctx.strokeStyle = `rgba(200,215,240,${a})`;
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(x+sh, 0); ctx.lineTo(x+sh*0.4, H); ctx.stroke();
-  }
-  t += 0.014;
-  requestAnimationFrame(drawShimmer);
+const EX=[{id:"food",l:"飲食",i:LG_FORK},{id:"trans",l:"交通",i:LG_TRANS},{id:"play",l:"娛樂",i:LG_PLAY},{id:"house",l:"住家",i:LG_HOUSE},{id:"med",l:"醫療",i:LG_MED},{id:"shop",l:"購物",i:LG_SHOP},{id:"eo",l:"其他",i:LG_OTHER}].map(c=>({...c,t:"e"}));
+const IN=[{id:"sal",l:"薪資",i:LG_SAL},{id:"bon",l:"獎金",i:LG_BON},{id:"inv",l:"投資回報",i:LG_INV},{id:"io",l:"其他",i:LG_OTHER}].map(c=>({...c,t:"i"}));
+const SV=[{id:"sav",l:"儲蓄",i:LG_BANK},{id:"sav2",l:"定存",i:LG_GEM},{id:"sav3",l:"其他儲蓄",i:LG_OTHER}].map(c=>({...c,t:"s"}));
+const ST=[{id:"tb",l:"台股買進",i:LG_TW,m:"TW",a:"b"},{id:"ts",l:"台股賣出",i:LG_TW,m:"TW",a:"s"},{id:"ub",l:"美股買進",i:LG_US_MAP,m:"US",a:"b"},{id:"us",l:"美股賣出",i:LG_US_MAP,m:"US",a:"s"}].map(c=>({...c,t:"k"}));
+const ALL=[...EX,...IN,...ST,...SV];
+const cat=id=>ALL.find(c=>c.id===id)||EX[0];
+const K='wlt2';
+const ld=()=>{try{return JSON.parse(localStorage.getItem(K)||'[]')}catch(e){return[]}};
+const sv=r=>localStorage.setItem(K,JSON.stringify(r));
+const fT=n=>(+n).toLocaleString('zh-TW');
+const fU=n=>'US$ '+(+n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fA=(a,c)=>c==='USD'?fU(a):fT(a);
+const fD=iso=>{const d=new Date(iso);return(d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
+let tab='o',mode='e';
+function go(t){tab=t;if(t==='a')mode='e';['o','s','g'].forEach(id=>{const e=document.getElementById('nb-'+id);if(e)e.className='nb'});if(t==='o')document.getElementById('nb-o').className='nb bc';if(t==='s')document.getElementById('nb-s').className='nb bp';if(t==='g')document.getElementById('nb-g').className='nb bg';render()}
+function render(){rH();const m=document.getElementById('main');if(tab==='o')m.innerHTML=pO();else if(tab==='s')m.innerHTML=pS();else if(tab==='a')m.innerHTML=pA();else m.innerHTML=pG()}
+function rH(){const r=ld(),el=document.getElementById('hdr');if(tab==='s'){const ti=r.filter(x=>x.category==='tb').reduce((s,x)=>s+x.amount,0),to=r.filter(x=>x.category==='ts').reduce((s,x)=>s+x.amount,0),ui=r.filter(x=>x.category==='ub').reduce((s,x)=>s+x.amount,0),uo=r.filter(x=>x.category==='us').reduce((s,x)=>s+x.amount,0),tp=to>0?to-ti:0,up=uo>0?uo-ui:0,upTWD=Math.round(up*32),total=tp+upTWD;el.innerHTML=`<div class="hdr-top">Portfolio</div><div class="hdr-title">股票投資<div class="hdr-sub">台股 ＋ 美股</div></div><div class="hero" style="margin-top:12px"><div class="hero-lbl">已實現損益</div><div class="hero-amt ${total>=0?'pos':'neg'}">${total>=0?'+':''}${fT(total)}</div><div class="chips"><div class="chip"><div class="chip-l">台股已實</div><div class="chip-v" style="color:${tp>=0?'var(--green)':'var(--red)'}">${tp>=0?'+':''}${fT(tp)}</div></div><div class="chip"><div class="chip-l">美股已實</div><div class="chip-v" style="color:${up>=0?'var(--green)':'var(--red)'}">${up>=0?'+':''}${fU(up)}</div></div></div></div>`}else if(tab==='g'){el.innerHTML=`<div class="hdr-top">Settings</div><div class="hdr-title">設定</div>`}else{const inc=r.filter(x=>cat(x.category).t==='i').reduce((s,x)=>s+x.amount,0),exp=r.filter(x=>cat(x.category).t==='e').reduce((s,x)=>s+x.amount,0),sav=r.filter(x=>cat(x.category).t==='s').reduce((s,x)=>s+x.amount,0),twIn=r.filter(x=>x.category==='tb').reduce((s,x)=>s+x.amount,0),twOut=r.filter(x=>x.category==='ts').reduce((s,x)=>s+x.amount,0),usIn=r.filter(x=>x.category==='ub').reduce((s,x)=>s+x.amount,0),usOut=r.filter(x=>x.category==='us').reduce((s,x)=>s+x.amount,0),twPnl=twOut>0?twOut-twIn:0,usPnl=usOut>0?usOut-usIn:0,realized=twPnl+Math.round(usPnl*32),b=inc+realized-exp-sav;el.innerHTML=`<div class="hdr-top">Overview</div><div class="hdr-title">財務管家<div class="hdr-sub">收支總覽</div></div><div class="hero" style="margin-top:12px"><div class="hero-lbl">結餘</div><div class="hero-amt ${b>0?'pos':b<0?'neg':''}">${fT(Math.abs(b))}</div><div class="chips" style="grid-template-columns:1fr 1fr 1fr"><div class="chip"><div class="chip-l">收入</div><div class="chip-v" style="color:var(--green)">${fT(inc)}</div></div><div class="chip"><div class="chip-l">支出</div><div class="chip-v" style="color:var(--red)">${fT(exp)}</div></div><div class="chip"><div class="chip-l">儲蓄</div><div class="chip-v" style="color:var(--cyan)">${fT(sav)}</div></div></div></div>`}}
+const icoEl=c=>`<div class="ico">${c.i}</div>`;
+function pO(){const r=ld().filter(x=>{const t=cat(x.category).t;return t==='i'||t==='e'||t==='s'}).slice(0,40);if(!r.length)return`<div class="page"><div class="empty"><span>📒</span>尚無收支記錄<br>點下方 ＋ 開始記帳</div></div>`;return`<div class="page"><div class="sec">收支記錄</div>`+r.map(x=>{const c=cat(x.category),isI=c.t==='i';return`<div class="card" onclick="openEdit('${x.id}')" style="cursor:pointer">${icoEl(c)}<div style="flex:1;overflow:hidden"><div class="cn">${x.note||c.l}</div><div class="cm">${fD(x.date)}</div></div><div class="ca" style="color:${isI?'var(--green)':'var(--red)'}">${isI?'+':'-'}${fT(x.amount)}</div></div>`}).join('')+'</div>'}
+function pS(){const r=ld();const ti=r.filter(x=>x.category==='tb').reduce((s,x)=>s+x.amount,0),to=r.filter(x=>x.category==='ts').reduce((s,x)=>s+x.amount,0),ui=r.filter(x=>x.category==='ub').reduce((s,x)=>s+x.amount,0),uo=r.filter(x=>x.category==='us').reduce((s,x)=>s+x.amount,0),tp=to>0?to-ti:0,up=uo>0?uo-ui:0;const cards=`<div class="stk2"><div class="sc"><span class="sc-flag">🇹🇼</span><div class="sc-name">台股</div><div class="sc-row"><span class="sc-l">買進</span><span class="sc-v">${fT(ti)}</span></div><div class="sc-row"><span class="sc-l">賣出</span><span class="sc-v">${fT(to)}</span></div><div class="sc-pnl"><span class="sc-pl">損益</span><span class="sc-pv" style="color:${tp>=0?'var(--green)':'var(--red)'}">${tp>=0?'+':''}${fT(tp)}</span></div></div><div class="sc"><span class="sc-flag">🇺🇸</span><div class="sc-name">美股 <span style="font-size:9px;opacity:.45;font-weight:400">匯率&nbsp;32</span></div><div class="sc-row"><span class="sc-l">買進</span><span class="sc-v">${fU(ui)}</span></div><div class="sc-row"><span class="sc-l">賣出</span><span class="sc-v">${fU(uo)}</span></div><div class="sc-pnl"><span class="sc-pl">損益</span><span class="sc-pv" style="color:${up>=0?'var(--green)':'var(--red)'}">${up>=0?'+':''}${fU(up)}</span></div></div></div>`;const sr=r.filter(x=>cat(x.category).t==='k').slice(0,50);const list=!sr.length?`<div class="empty"><span>📊</span>尚無股票記錄</div>`:sr.map(x=>{const c=cat(x.category),isU=c.m==='US',isB=c.a==='b';return`<div class="card" onclick="openEdit('${x.id}')" style="cursor:pointer">${icoEl(c)}<div style="flex:1;overflow:hidden"><div class="cn">${x.note||c.l}</div><div class="cm">${fD(x.date)}${x.shares?' · '+x.shares+'股':''}</div></div><div class="ca"><div style="color:${isB?'var(--amber)':'var(--violet)'}">${isB?'-':'+'}${fA(x.amount,x.currency)}</div><span class="bdg ${isU?'bdg-us':'bdg-tw'}">${isU?'美股':'台股'}</span></div></div>`}).join('');return`<div class="page">${cards}<button class="btn-add" onclick="go('a');setTimeout(()=>sm('k'),30)">＋ 新增股票交易</button><div class="sec">交易記錄</div>${list}</div>`}
+function pA(){const tabs=`<div class="tabs"><button class="tab ${mode==='e'?'ae':''}" onclick="sm('e')">支出</button><button class="tab ${mode==='i'?'ai':''}" onclick="sm('i')">收入</button><button class="tab ${mode==='s'?'as':''}" onclick="sm('s')">儲蓄</button><button class="tab ${mode==='k'?'as':''}" onclick="sm('k')">股票</button></div>`;let b='';if(mode==='e'||mode==='i'||mode==='s'){const cs=mode==='e'?EX:mode==='i'?IN:SV;b=`<div class="fg"><label>類別</label><select id="fc">${cs.map(c=>`<option value="${c.id}">${c.l}</option>`).join('')}</select></div><div class="fg"><label>金額 NT$</label><input id="fa" type="number" inputmode="decimal" placeholder="0" class="big"></div><div class="fg"><label>備註（選填）</label><input id="fn" type="text" placeholder="例：午餐"></div><button class="btn ${mode==='e'?'btn-e':mode==='s'?'btn-s':'btn-i'}" onclick="dA()">儲存</button>`}else{b=`<div class="fg"><label>交易類型</label><select id="fsc" onchange="sC()"><option value="tb">台股買進</option><option value="ts">台股賣出</option><option value="ub">美股買進</option><option value="us">美股賣出</option></select></div><div class="fg"><label>股票名稱 / 代號</label><input id="fn" type="text" placeholder="例：台積電 2330、NVDA"></div><div class="fg"><label id="fal">金額 NT$</label><input id="fa" type="number" inputmode="decimal" placeholder="0" class="big"></div><div class="fg"><label>股數（選填）</label><input id="fsh" type="number" inputmode="decimal" placeholder="例：1000"></div><button class="btn btn-s" onclick="dS()">儲存</button>`}return`<div class="page"><div class="form">${tabs}${b}<button class="btn btn-c" onclick="go('o')">取消</button></div></div>`}
+function pG(){const r=ld(),k=r.filter(x=>cat(x.category).t==='k').length,s=r.filter(x=>cat(x.category).t==='s').length;return`<div class="page"><div class="sec">資料</div><div class="si"><div class="sr"><span>收支筆數</span><span class="sv">${r.length-k-s} 筆</span></div><div class="sr"><span>儲蓄筆數</span><span class="sv">${s} 筆</span></div><div class="sr"><span>股票筆數</span><span class="sv">${k} 筆</span></div><div class="sr"><span>儲存方式</span><span class="sv">localStorage ✓</span></div><div class="sr"><span>離線使用</span><span class="sv">完全支援 ✓</span></div></div><div class="sec">清除</div><button class="btn-del" onclick="dc('e')">清除收支記錄</button><button class="btn-del" onclick="dc('k')">清除股票記錄</button><button class="btn-del" onclick="dc('a')" style="background:#2a2010;color:var(--amber);border-color:rgba(251,191,36,.2)">清除全部</button></div>`}
+function sm(m){mode=m;render()}
+function sC(){const v=document.getElementById('fsc').value,l=document.getElementById('fal');if(l)l.textContent='金額 '+(v==='ub'||v==='us'?'US$':'NT$')}
+function dA(){const c=document.getElementById('fc').value,a=document.getElementById('fa').value,n=document.getElementById('fn').value.trim();if(!a||isNaN(+a)||+a<=0){alert('請輸入有效金額');return}const r=ld();r.unshift({id:Date.now(),category:c,amount:Math.round(+a),note:n,currency:'TWD',date:new Date().toISOString()});sv(r);go('o')}
+function dS(){const c=document.getElementById('fsc').value,a=document.getElementById('fa').value,n=document.getElementById('fn').value.trim(),sh=document.getElementById('fsh').value,isU=c==='ub'||c==='us';if(!a||isNaN(+a)||+a<=0){alert('請輸入有效金額');return}if(!n){alert('請輸入股票名稱');return}const r=ld();r.unshift({id:Date.now(),category:c,amount:isU?parseFloat((+a).toFixed(2)):Math.round(+a),note:n,currency:isU?'USD':'TWD',shares:sh?+sh:null,date:new Date().toISOString()});sv(r);go('s')}
+function dc(s){if(!confirm('確定清除？無法復原'))return;if(s==='a'){localStorage.removeItem(K)}else if(s==='k'){sv(ld().filter(x=>cat(x.category).t!=='k'))}else{sv(ld().filter(x=>cat(x.category).t==='k'))}render()}
+
+function openEdit(id){
+const r=ld(),x=r.find(v=>String(v.id)===String(id));
+if(!x)return;
+const c=cat(x.category),isStk=c.t==='k',isUS=x.currency==='USD';
+const allCats=isStk?ST:(c.t==='i'?IN:c.t==='s'?SV:EX);
+const opts=allCats.map(ct=>`<option value="${ct.id}" ${ct.id===x.category?'selected':''}>${ct.l}</option>`).join('');
+const stkOpts=[
+{id:'tb',l:'🇹🇼📈 台股買進'},{id:'ts',l:'🇹🇼📉 台股賣出'},
+{id:'ub',l:'🇺🇸📈 美股買進'},{id:'us',l:'🇺🇸📉 美股賣出'}
+].map(ct=>`<option value="${ct.id}" ${ct.id===x.category?'selected':''}>${ct.l}</option>`).join('');
+const sharesField=isStk?`<div class="fg"><label>股數（選填）</label><input id="esh" type="number" inputmode="decimal" value="${x.shares||''}" placeholder="例：1000"></div>`:'';
+const catField=isStk
+?`<div class="fg"><label>交易類型</label><select id="ecat" onchange="eSync()">${stkOpts}</select></div>`
+:`<div class="fg"><label>類別</label><select id="ecat">${opts}</select></div>`;
+const div=document.createElement('div');
+div.className='modal-overlay';
+div.id='edit-modal';
+div.innerHTML=`<div class="modal">
+<div class="modal-title">✏️ 編輯記錄</div>
+${catField}
+<div class="fg"><label>備註</label><input id="en" type="text" value="${x.note||''}" placeholder="備註"></div>
+<div class="fg"><label id="eal">金額（${isUS?'US$':'NT$'}）</label><input id="ea" type="number" inputmode="decimal" value="${x.amount}" class="big"></div>
+${sharesField}
+<div class="modal-btns">
+<button class="btn-del2" onclick="delRec('${x.id}')">刪除</button>
+<button class="btn-save2" onclick="saveEdit('${x.id}')">儲存</button>
+</div>
+<button class="btn btn-c" onclick="closeEdit()" style="margin-top:6px">取消</button>
+</div>`;
+div.addEventListener('click',e=>{if(e.target===div)closeEdit()});
+document.body.appendChild(div);
 }
-drawShimmer();
-
-// State
-let phase = 'idle';
-
-const mirror        = document.getElementById('mirror');
-const rippleWrap    = document.getElementById('ripple-wrap');
-const idleContent   = document.getElementById('idle-content');
-const rippleContent = document.getElementById('ripple-content');
-const revealContent = document.getElementById('reveal-content');
-const tagLabel      = document.getElementById('tag-label');
-const tagLineL      = document.getElementById('tag-line-l');
-const tagLineR      = document.getElementById('tag-line-r');
-const quoteText     = document.getElementById('quote-text');
-const quoteNum      = document.getElementById('quote-num');
-const btnAgain      = document.getElementById('btn-again');
-
-const allContent = [idleContent, rippleContent, revealContent];
-
-function showOnly(el) {
-  allContent.forEach(e => e.classList.add('hidden'));
-  el.classList.remove('hidden');
+function eSync(){
+  const v=document.getElementById('ecat').value,l=document.getElementById('eal');
+  if(l)l.textContent='金額（'+(v==='ub'||v==='us'?'US$':'NT$')+'）';
 }
-
-function restartAnimation(el) {
-  el.style.animation = 'none';
-  void el.offsetWidth; // reflow
-  el.style.animation = '';
+function closeEdit(){const m=document.getElementById('edit-modal');if(m)m.remove()}
+function saveEdit(id){
+  const a=document.getElementById('ea').value,n=document.getElementById('en').value.trim(),c=document.getElementById('ecat').value;
+  const sh=document.getElementById('esh');
+  if(!a||isNaN(+a)||+a<=0){alert('請輸入有效金額');return}
+  const isUS=c==='ub'||c==='us';
+  const r=ld(),i=r.findIndex(x=>String(x.id)===String(id));
+  if(i<0)return;
+  r[i]={...r[i],category:c,amount:isUS?parseFloat((+a).toFixed(2)):Math.round(+a),note:n,currency:isUS?'USD':'TWD',shares:sh&&sh.value?+sh.value:null};
+  sv(r);closeEdit();render();
 }
-
-function spawnRipples() {
-  rippleWrap.innerHTML = '';
-  rippleWrap.classList.remove('hidden');
-  [0, 1, 2].forEach(i => {
-    const r = document.createElement('div');
-    r.className = 'ripple-ring';
-    r.style.animationDelay = `${i * 0.14}s`;
-    rippleWrap.appendChild(r);
-  });
-  setTimeout(() => rippleWrap.classList.add('hidden'), 900);
+function delRec(id){
+  if(!confirm('確定刪除這筆記錄？'))return;
+  sv(ld().filter(x=>String(x.id)!==String(id)));closeEdit();render();
 }
-
-function consult() {
-  if (phase === 'ripple') return;
-  const pick = quotes[Math.floor(Math.random() * quotes.length)];
-  phase = 'ripple';
-  mirror.classList.add('waiting');
-  showOnly(rippleContent);
-  spawnRipples();
-
-  setTimeout(() => {
-    const color = tagColors[pick.tag] || '#9ab0c8';
-    tagLabel.textContent = pick.tag;
-    tagLabel.style.color = color + 'bb';
-    tagLineL.style.background = `linear-gradient(90deg, transparent, ${color}38)`;
-    tagLineR.style.background = `linear-gradient(90deg, ${color}38, transparent)`;
-    quoteText.textContent = pick.text;
-    quoteNum.textContent = 'No.' + String(pick.id).padStart(3, '0');
-
-    showOnly(revealContent);
-    restartAnimation(revealContent);
-
-    phase = 'reveal';
-    mirror.classList.remove('waiting');
-  }, 900);
-}
-
-mirror.addEventListener('click', consult);
-btnAgain.addEventListener('click', e => { e.stopPropagation(); consult(); });
-</script>
-</body>
-</html>
+render();
+</script></body></html>
